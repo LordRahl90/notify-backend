@@ -27,7 +27,7 @@ func TestNewUser(t *testing.T) {
 		LastLogon: time.Now(),
 	}
 
-	n, err := db.NewUser(user)
+	n, err := db.NewUser(&user)
 	if err != nil {
 		log.Fatal(err)
 	}

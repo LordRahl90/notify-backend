@@ -30,7 +30,7 @@ func (u *User) BeforeCreate(scope *gorm.Scope) error {
 }
 
 //NewUser - Create a new user account
-func (d *Database) NewUser(u User) (*User, error) {
+func (d *Database) NewUser(u *User) (*User, error) {
 	db := d.DB
 	err := u.Validate()
 	if err != nil {
@@ -58,7 +58,7 @@ func (d *Database) NewUser(u User) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &u, err
+	return u, err
 }
 
 //GetAllUsers - Return all the user information

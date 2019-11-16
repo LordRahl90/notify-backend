@@ -49,4 +49,5 @@ func setupDB(dialect, conString string) (*database.Database, error) {
 
 func setupEndpoints(router *gin.Engine) {
 	handlers.NewUserHandler(router)
+	handlers.NewMessageHandler(router)
 }

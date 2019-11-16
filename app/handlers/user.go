@@ -32,6 +32,12 @@ type FriendRequestApproval struct {
 	Response   bool   `json:"response" form:"response" binding:"required"`
 }
 
+//DeviceRequest - format for registering a user's device
+type DeviceRequest struct {
+	Token string `json:"token" form:"token" binding:"required"`
+	Name  string `json:"name" form:"name"`
+}
+
 //NewUserHandler - Returns a new Route for user handlers
 func NewUserHandler(router *gin.Engine) {
 
@@ -47,7 +53,35 @@ func NewUserHandler(router *gin.Engine) {
 		u.POST("/me/friend/request", sendFriendRequest)
 		u.GET("/me/friend/requests", getFriendRequests)
 		u.PUT("/me/friend/update", updateRequest)
+		u.POST("/me/device", registerDevice)
 	}
+}
+
+func registerDevice(c *gin.Context) {
+	var req DeviceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, returnFormat(false, err.Error(), nil))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, returnFormat(false, err.Error(), nil))
+		return
+	}
+
+	dReq := database.UserDevice{
+		UserID:     userID,
+		Token:      req.Token,
+		DeviceName: req.Name,
+	}
+
+	if err = Database.NewUserDevice(&dReq); err != nil {
+		c.JSON(http.StatusUnauthorized, returnFormat(false, err.Error(), nil))
+		return
+	}
+
+	c.JSON(200, returnFormat(true, "User Device updated successfully.", nil))
 }
 
 func authenticate(c *gin.Context) {
@@ -75,7 +109,7 @@ func newUser(c *gin.Context) {
 		return
 	}
 
-	user, err := Database.NewUser(database.User{
+	user, err := Database.NewUser(&database.User{
 		Email:    userReq.Email,
 		Fullname: userReq.Fullname,
 		Password: userReq.Password,
@@ -84,6 +118,18 @@ func newUser(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, returnFormat(false, err.Error(), nil))
 		return
+	}
+
+	if userReq.Token != "" {
+		//add a user device token to the mix.
+		u := database.UserDevice{
+			UserID: user.ID,
+			Token:  userReq.Token,
+		}
+		if err := Database.NewUserDevice(&u); err != nil {
+			c.JSON(http.StatusBadRequest, returnFormat(false, err.Error(), nil))
+			return
+		}
 	}
 
 	user.Password = ""

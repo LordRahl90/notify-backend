@@ -15,7 +15,7 @@ func createUsers() {
 			Password: "secret",
 		}
 
-		_, err := db.NewUser(u)
+		_, err := db.NewUser(&u)
 		if err != nil {
 			log.Fatal(err)
 		}
