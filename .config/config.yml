@@ -1,0 +1,20 @@
+app_root: .
+ignored_folders:
+- vendor
+- log
+- logs
+- tmp
+- node_modules
+- bin
+- templates
+included_extensions:
+- .go
+build_target_path: ""
+build_path: /var/folders/28/x94qm8tj59z1bdrs96s8t2580000gn/T/
+build_flags: []
+build_delay: 200ns
+binary_name: refresh-build
+command_flags: []
+command_env: []
+enable_colors: true
+log_name: ""
