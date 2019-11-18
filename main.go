@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
@@ -20,7 +22,8 @@ import (
 )
 
 func main() {
-
+	sigs := make(chan os.Signal, 1)
+	ctx := context.Background()
 	err := godotenv.Load("./.envs/.app.env")
 	if err != nil {
 		log.Fatal(err)
@@ -47,13 +50,31 @@ func main() {
 	s.DB = db
 	setupEndpoints(s.Router)
 	handlers.Database = s.DB
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	go startMonitoringServer()
+	go startMonitoringServer(ctx)
 	fmt.Println("Starting server")
-	s.Start("0.0.0.0:5500")
+	go s.Start(ctx, "0.0.0.0:5500")
+
+	select {
+	case sig := <-sigs:
+		fmt.Println("Done Completely", sig)
+		// gracefulShutdown(s)
+
+	}
+
+	gracefulShutdown(s)
+	fmt.Println("Hello World")
+
 }
 
-func startMonitoringServer() {
+func gracefulShutdown(s *services.Server) {
+	s.DB.DB.Close()
+	fmt.Println("Shutting down the DB gracefully...")
+	os.Exit(0)
+}
+
+func startMonitoringServer(ctx context.Context) {
 	http.Handle("/metrics", promhttp.Handler())
 	println("Monitoring server added successfully.")
 	if err := http.ListenAndServe("0.0.0.0:5501", nil); err != nil {

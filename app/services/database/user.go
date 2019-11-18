@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -32,6 +33,8 @@ func (u *User) BeforeCreate(scope *gorm.Scope) error {
 //NewUser - Create a new user account
 func (d *Database) NewUser(u *User) (*User, error) {
 	db := d.DB
+	_, cancel := context.WithCancel(d.Ctx)
+	defer cancel()
 	err := u.Validate()
 	if err != nil {
 		return nil, err

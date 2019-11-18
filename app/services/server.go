@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
 	"github.com/lordrahl90/notify-backend/app/middlewares"
@@ -25,7 +27,7 @@ func NewServer() *Server {
 }
 
 //Start - Starts the server
-func (s *Server) Start(address string) {
+func (s *Server) Start(ctx context.Context, address string) {
 	s.Router.Run(address)
 }
 

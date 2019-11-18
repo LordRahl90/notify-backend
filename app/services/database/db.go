@@ -1,12 +1,15 @@
 package database
 
 import (
+	"context"
+
 	"github.com/jinzhu/gorm"
 )
 
 //Database struct
 type Database struct {
-	DB *gorm.DB
+	DB  *gorm.DB
+	Ctx context.Context
 }
 
 //NewDatabase - returns a new instance of database connection after migrating the necessary models.
