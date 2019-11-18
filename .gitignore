@@ -1,3 +1,4 @@
 .env
 junks/
 fire-messaging.json
+.envs/*.env

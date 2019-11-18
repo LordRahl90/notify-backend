@@ -1,0 +1,27 @@
+version: '3'
+services:
+  notify:
+    image: lordrahl/notify-server:latest
+    container_name: "notify-backend"
+    ports:
+     - 5500:5500
+
+    depends_on: 
+      - database
+
+  database:
+    image: mysql:5.7
+    container_name: "notify_db"
+    env_file: '../.envs/.mysql.env'
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - 3307:3306
+
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  notify:
+    driver: bridge

@@ -11,6 +11,7 @@ import (
 //Message struct for holding messages
 type Message struct {
 	gorm.Model
+	QuoteID    uint      `json:"quoted_message"`
 	MessageKey string    `json:"message_key"`
 	SenderID   int       `json:"sender_id"`
 	Sender     User      `json:"sender" gorm:"foreignkey:SenderID"`

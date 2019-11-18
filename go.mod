@@ -17,6 +17,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/jinzhu/gorm v1.9.11
 	github.com/jinzhu/now v1.1.1 // indirect
+	github.com/joho/godotenv v1.3.0
 	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/markbates/refresh v1.8.0 // indirect
