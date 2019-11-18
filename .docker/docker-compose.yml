@@ -5,9 +5,12 @@ services:
     container_name: "notify-backend"
     ports:
      - 5500:5500
+     - 5501:5501
 
     depends_on: 
       - database
+    networks:
+      - notify
 
   database:
     image: mysql:5.7
@@ -17,6 +20,27 @@ services:
       - db_data:/var/lib/mysql
     ports:
       - 3307:3306
+    networks:
+      - notify
+
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - 5502:9090
+    volumes:
+      - ../.prometheus:/etc/prometheus
+    networks:
+      - notify
+      
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - 5503:3000
+    networks:
+      - notify
 
 volumes:
   db_data:

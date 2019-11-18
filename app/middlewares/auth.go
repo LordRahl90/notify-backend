@@ -9,7 +9,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lordrahl90/notify-backend/app/services/database"
+	"github.com/lordrahl90/notify-backend/app/services/prometheus"
 )
+
+//BasicMonitor - Logs some basic Informaton about the request and response time
+func BasicMonitor() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+		host := c.Request.Host
+		prometheus.IncrementRequestCount(host, path)
+
+		//we might want to log the response time on here too....
+		c.Next()
+	}
+}
 
 //Logger - Test Middleware
 func Logger() gin.HandlerFunc {
@@ -26,7 +39,7 @@ func Logger() gin.HandlerFunc {
 //Auth Middleware for authenticated routes
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
+		prometheus.IncrementResponseCount(c.Writer.Status(), c.Writer.Size())
 		auth := c.Request.Header["Authorization"]
 		if len(auth) <= 0 {
 			c.JSON(http.StatusUnauthorized, gin.H{

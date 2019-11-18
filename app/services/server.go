@@ -3,6 +3,7 @@ package services
 import (
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
+	"github.com/lordrahl90/notify-backend/app/middlewares"
 	"github.com/lordrahl90/notify-backend/app/services/database"
 )
 
@@ -29,6 +30,7 @@ func (s *Server) Start(address string) {
 }
 
 func (s *Server) setRoutes() {
+	s.Router.RouterGroup.Use(middlewares.BasicMonitor())
 	s.Router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "Hello World",

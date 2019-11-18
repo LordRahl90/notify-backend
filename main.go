@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	firebase "firebase.google.com/go"
@@ -14,6 +15,7 @@ import (
 	"github.com/lordrahl90/notify-backend/app/handlers"
 	"github.com/lordrahl90/notify-backend/app/services"
 	"github.com/lordrahl90/notify-backend/app/services/database"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/api/option"
 )
 
@@ -45,8 +47,20 @@ func main() {
 	s.DB = db
 	setupEndpoints(s.Router)
 	handlers.Database = s.DB
+
+	go startMonitoringServer()
 	fmt.Println("Starting server")
 	s.Start("0.0.0.0:5500")
+}
+
+func startMonitoringServer() {
+	http.Handle("/metrics", promhttp.Handler())
+	println("Monitoring server added successfully.")
+	if err := http.ListenAndServe("0.0.0.0:5501", nil); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Server stopped")
 }
 
 func createFirebaseApp() (*firebase.App, error) {
