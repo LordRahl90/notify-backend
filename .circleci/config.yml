@@ -24,6 +24,9 @@ jobs:
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
+      - run:
+          name: Test The Features
+          command go test ./...
   DockerBuild:
     docker:
       - image: circleci/golang:1.12
