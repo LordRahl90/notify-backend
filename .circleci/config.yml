@@ -26,7 +26,7 @@ jobs:
             - "/go/pkg/mod"
       - run:
           name: Test The Features
-          command go test ./...
+          command: go test ./...
   DockerBuild:
     docker:
       - image: circleci/golang:1.12
