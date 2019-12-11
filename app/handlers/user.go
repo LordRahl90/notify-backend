@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lordrahl90/notify-backend/app/middlewares"
 	"github.com/lordrahl90/notify-backend/app/services/database"
@@ -19,6 +22,13 @@ type User struct {
 	Fullname string `json:"fullname" form:"fullname"`
 	Password string `json:"password" form:"password" binding:"required"`
 	Token    string `json:"token" form:"token"`
+}
+
+type SocialUser struct {
+	Email    string `json:"email" form:"email" binding:"required"`
+	FullName string `json:"full_name" form:"full_name" binding:"required"`
+	Token    string `json:"token" form:"token" binding:"required"`
+	Avatar   string `json:"avatar" form:"avatar" binding:"required"`
 }
 
 //FriendRequest - Struct to manage the friendrequest request :-)
@@ -44,10 +54,12 @@ func NewUserHandler(router *gin.Engine) {
 	u := router.Group("/users")
 	{
 		u.POST("/authenticate", authenticate)
+		u.POST("/authenticate/social", authenticateSocial)
+		u.POST("/", newUser)
 		u.Use(middlewares.Logger())
 		u.Use(middlewares.Auth())
-		u.POST("/", newUser)
 		u.GET("/", allUsers)
+		u.POST("/search", searchUsers)
 		u.GET("/me", singleUser)
 		u.GET("/me/friends", getFriends)
 		u.POST("/me/friend/request", sendFriendRequest)
@@ -55,6 +67,25 @@ func NewUserHandler(router *gin.Engine) {
 		u.PUT("/me/friend/update", updateRequest)
 		u.POST("/me/device", registerDevice)
 	}
+}
+
+type sReq struct {
+	Data string `json:"data" form:"data" binding:"required"`
+}
+
+func searchUsers(c *gin.Context) {
+	var req sReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, returnFormat(false, err.Error(), nil))
+		return
+	}
+
+	users, err := Database.SearchForUser(req.Data)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, returnFormat(false, err.Error(), nil))
+		return
+	}
+	c.JSON(200, returnFormat(true, "Matches found.", users))
 }
 
 func registerDevice(c *gin.Context) {
@@ -84,6 +115,58 @@ func registerDevice(c *gin.Context) {
 	c.JSON(200, returnFormat(true, "User Device updated successfully.", nil))
 }
 
+func authenticateSocial(c *gin.Context) {
+	var req SocialUser
+	if err := c.ShouldBindJSON(&req); err != nil {
+		returnResponse(c, 400, false, err.Error(), nil)
+		return
+	}
+
+	password, err := bcrypt.GenerateFromPassword([]byte(uuid.New().String()), bcrypt.MinCost)
+	if err != nil {
+		returnResponse(c, 500, false, err.Error(), nil)
+		return
+	}
+
+	user, err := Database.NewUser(&database.User{
+		Fullname: req.FullName,
+		Email:    req.Email,
+		Password: string(password),
+	})
+	if err != nil {
+		returnResponse(c, 500, false, err.Error(), nil)
+		return
+	}
+
+	//save device token as well
+	err = Database.NewUserDevice(&database.UserDevice{
+		UserID: user.ID,
+		Token:  req.Token,
+	})
+	if err != nil {
+		returnResponse(c, 500, false, err.Error(), nil)
+		return
+	}
+
+	newToken, err := database.GenerateToken(user.ID)
+	if err != nil {
+		returnResponse(c, 500, false, err.Error(), nil)
+		return
+	}
+	friends, err := Database.GetUserFriends(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, returnFormat(false, err.Error(), nil))
+		return
+	}
+	user.Token = newToken
+	resp := map[string]interface{}{
+		"user":    user,
+		"friends": friends,
+	}
+
+	returnResponse(c, 200, true, "Authentication Completed successfully.", resp)
+}
+
 func authenticate(c *gin.Context) {
 	var req User
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -99,7 +182,18 @@ func authenticate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, returnFormat(true, "User Created", user))
+	friends, err := Database.GetUserFriends(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, returnFormat(false, err.Error(), nil))
+		return
+	}
+
+	resp := map[string]interface{}{
+		"user":    user,
+		"friends": friends,
+	}
+
+	c.JSON(200, returnFormat(true, "User Created", resp))
 }
 
 func newUser(c *gin.Context) {

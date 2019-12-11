@@ -24,11 +24,12 @@ func createUsers() {
 
 func tearDown() {
 	db.DB.Raw("TRUNCATE TABLE users")
+	db.DB.Raw("TRUNCATE TABLE friends")
 }
 
 func TestNewFriend(t *testing.T) {
-	// createUsers()
-	// defer tearDown()
+	createUsers()
+	defer tearDown()
 
 	friends := []Friend{
 		Friend{

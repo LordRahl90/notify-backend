@@ -1,13 +1,13 @@
 package database
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
+
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,6 +20,7 @@ type User struct {
 	Email     string    `json:"email"`
 	Password  string    `json:"-"`
 	Token     string    `json:"token"`
+	Avatar    string    `json:"avatar"`
 	LastLogon time.Time `json:"last_logon"`
 }
 
@@ -33,21 +34,20 @@ func (u *User) BeforeCreate(scope *gorm.Scope) error {
 //NewUser - Create a new user account
 func (d *Database) NewUser(u *User) (*User, error) {
 	db := d.DB
-	_, cancel := context.WithCancel(d.Ctx)
-	defer cancel()
+	// _, cancel := context.WithCancel(d.Ctx)
+	// defer cancel()
 	err := u.Validate()
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(u.Email, u.Fullname)
 
 	//check if record exists
 	var oUser User
 	err = db.First(&oUser, "email=?", u.Email).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
-	}
-	if oUser.Email != "" {
-		return nil, errors.New("User Exists already")
 	}
 
 	newPassword, err := generatePassword(u.Password)
@@ -57,7 +57,7 @@ func (d *Database) NewUser(u *User) (*User, error) {
 
 	u.Password = newPassword
 
-	err = db.Create(&u).Error
+	err = db.FirstOrCreate(&u, User{Email: u.Email}).Error
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (d *Database) Authenticate(email, password string) (*User, error) {
 		return nil, errors.New("invalid password provided for this user")
 	}
 
-	token, err := generateToken(user.ID)
+	token, err := GenerateToken(user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,22 +151,34 @@ func (d *Database) Authenticate(email, password string) (*User, error) {
 	return user, nil
 }
 
+//SearchForUser function to search for user whose name matches the defined data.
+func (d *Database) SearchForUser(data string) ([]User, error) {
+	db := d.DB
+	var users []User
+	s := "%" + data + "%"
+
+	if err := db.Where("fullname like ?", s).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 //Validate the entry provided
 func (u User) Validate() error {
 	if u.Fullname == "" {
-		return errors.New("Fullname should be provided")
+		return errors.New("full name should be provided")
 	}
 
 	if u.Email == "" {
-		return errors.New("Email should be provided")
+		return errors.New("email should be provided")
 	}
 
 	if u.Password == "" {
-		return errors.New("Password should be provided")
+		return errors.New("password should be provided")
 	}
 
 	if len(u.Password) < 6 {
-		return errors.New("Password should be more than 6")
+		return errors.New("password should be more than 6")
 	}
 	return nil
 }
@@ -188,8 +200,8 @@ func comparePassword(password, hashed string) bool {
 	return true
 }
 
-//function to generate a JWT token, This will be returned with the user's information when they login
-func generateToken(userID uint) (string, error) {
+//GenerateToken function to generate a JWT token, This will be returned with the user's information when they login
+func GenerateToken(userID uint) (string, error) {
 	expiryDate := time.Now().AddDate(0, 3, 0)
 	hashSecret := "my hashing secret"
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

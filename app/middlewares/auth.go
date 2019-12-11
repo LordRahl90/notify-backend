@@ -40,10 +40,21 @@ func Logger() gin.HandlerFunc {
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		prometheus.IncrementResponseCount(c.Writer.Status(), c.Writer.Size())
-		auth := c.Request.Header["Authorization"]
+		var auth []string
+
+		fmt.Printf("%v\n", c.Request.Header)
+
+		if len(c.Request.Header["Sec-Websocket-Protocol"]) > 0 && c.Request.Header["Sec-Websocket-Protocol"][0] != "" {
+			authHeader := c.Request.Header["Sec-Websocket-Protocol"]
+			auth = []string{"Bearer " + authHeader[0]}
+		} else {
+			auth = c.Request.Header["Authorization"]
+		}
+
 		if len(auth) <= 0 {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "No Authorization token",
+				"success": false,
+				"message": "No Authorization token",
 			})
 			c.Abort()
 			return
@@ -52,7 +63,8 @@ func Auth() gin.HandlerFunc {
 		authToken := strings.Split(auth[0], " ")
 		if len(authToken) <= 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid token format provided",
+				"success": false,
+				"message": "Invalid token format provided",
 			})
 			c.Abort()
 			return

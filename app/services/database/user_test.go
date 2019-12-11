@@ -74,7 +74,7 @@ func TestAuthentication(t *testing.T) {
 }
 
 func TestGenerateToken(t *testing.T) {
-	token, err := generateToken(100)
+	token, err := GenerateToken(100)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,4 +90,14 @@ func TestDecodeToken(t *testing.T) {
 	}
 
 	fmt.Println(res)
+}
+
+func TestSearchUser(t *testing.T) {
+	s := "ab"
+	res, err := db.SearchForUser(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(res)
 }

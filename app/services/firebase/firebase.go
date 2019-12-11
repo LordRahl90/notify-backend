@@ -15,8 +15,8 @@ type FireApp struct {
 }
 
 //New Create New Firebase App
-func New() (*firebase.App, error) {
-	return nil, nil
+func New(app *firebase.App) (*FireApp, error) {
+	return &FireApp{App:app}, nil
 }
 
 //SendMessage - Sends Message from firebase to devices

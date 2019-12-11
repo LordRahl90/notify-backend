@@ -11,10 +11,10 @@ import (
 type Friend struct {
 	gorm.Model
 	RequestKey string `json:"request_key"`
-	UserID     uint   `json:"user"`
-	FriendID   uint   `json:"friend_id"`
+	UserID     uint   `json:"user" json:"-"`
+	FriendID   uint   `json:"friend_id" json:"-"`
 	Friend     User   `gorm:"foreignkey:FriendID"`
-	User       User   `gorm:"foreignkey:UserID"`
+	User       User   `gorm:"foreignkey:UserID" json:"-"`
 	Status     bool   `json:"status" gorm:"default:false"`
 	Response   bool   `json:"res_status" gorm:"default:false"`
 }
@@ -27,7 +27,7 @@ func (f *Friend) BeforeCreate(scope *gorm.Scope) {
 //NewFriendRequest - Create a new friend record
 func (d *Database) NewFriendRequest(f Friend) error {
 	if f.FriendID == f.UserID {
-		return errors.New("You cannot send a friend request to yourself")
+		return errors.New("you cannot send a friend request to yourself")
 	}
 	db := d.DB
 	if _, err := d.GetUser(f.UserID); err != nil {

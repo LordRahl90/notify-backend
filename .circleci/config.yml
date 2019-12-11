@@ -1,0 +1,52 @@
+version: 2
+jobs:
+  BuildAndTest:
+    docker:
+      - image: circleci/golang:1.12
+        environment:
+          GO111MODULE: "on"
+      - image: circleci/mysql:5.7
+        environment:
+          MYSQL_DATABASE: "notifier_test"
+    working_directory: /go/src/github.com/lordrahl90/notify-backend
+    steps:
+      - checkout
+      - run:
+          name: Generate Firebase config file
+          command: cp fire-messaging.json.example fire-messaging.json
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+      - run:
+          name: Pull Dependencies
+          command: go get -v -t -d ./...
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+  DockerBuild:
+    docker:
+      - image: circleci/golang:1.12
+    working_directory: /go/src/github.com/lordrahl90/notify-backend
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: sudo make build-image
+      - run:
+          name: Push To Dockerhub
+          command: |-
+            echo $DOCKER_LOGIN $DOCKER_PWD
+            sudo docker login -u $DOCKER_LOGIN -p $DOCKER_PWD
+            sudo make push
+
+workflows:
+  version: 2
+  BuildAndPush:
+    jobs:
+      - BuildAndTest
+      - DockerBuild:
+          requires:
+            - BuildAndTest

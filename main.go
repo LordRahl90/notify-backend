@@ -45,8 +45,13 @@ func main() {
 	s := services.NewServer()
 	db, err := setupDB("mysql", dsn)
 	if err != nil {
-		log.Fatal("An error occured while setting up the database")
+		log.Fatal("An error occurred while setting up the database")
 	}
+	f, err := createFirebaseApp()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.FireApp = f
 	s.DB = db
 	setupEndpoints(s.Router)
 	handlers.Database = s.DB
@@ -59,22 +64,22 @@ func main() {
 	select {
 	case sig := <-sigs:
 		fmt.Println("Done Completely", sig)
-		// gracefulShutdown(s)
-
 	}
 
 	gracefulShutdown(s)
-	fmt.Println("Hello World")
-
 }
 
 func gracefulShutdown(s *services.Server) {
-	s.DB.DB.Close()
+	if err := s.DB.DB.Close(); err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println("Shutting down the DB gracefully...")
 	os.Exit(0)
 }
 
 func startMonitoringServer(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	http.Handle("/metrics", promhttp.Handler())
 	println("Monitoring server added successfully.")
 	if err := http.ListenAndServe("0.0.0.0:5501", nil); err != nil {
@@ -88,7 +93,7 @@ func createFirebaseApp() (*firebase.App, error) {
 	opt := option.WithCredentialsFile("./fire-messaging.json")
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
-		return nil, fmt.Errorf("Error Initializing app %v", err)
+		return nil, fmt.Errorf("error Initializing app %v", err)
 	}
 
 	return app, nil
