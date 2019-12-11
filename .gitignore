@@ -2,3 +2,4 @@
 junks/
 fire-messaging.json
 .envs/*.env
+.idea/
